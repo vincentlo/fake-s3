@@ -189,13 +189,7 @@ module FakeS3
         obj.content_type = metadata_struct[:content_type]
         obj.size = metadata_struct[:size]
         obj.modified_date = metadata_struct[:modified_date]
-        metadata_struct[:custom_metadata] = {}
-        request.header.each do |key, value|
-          match = /^x-amz-meta-(.*)$/.match(key)
-          if match
-            metadata_struct[:custom_metadata][match[1]] = value.join(', ')
-          end
-        end
+        obj.custom_metadata = metadata_struct[:custom_metadata]
 
         bucket.add(obj)
         return obj
@@ -225,6 +219,13 @@ module FakeS3
       metadata[:content_type] = request.header["content-type"].first
       metadata[:size] = File.size(content)
       metadata[:modified_date] = File.mtime(content).utc.iso8601()
+      metadata[:custom_metadata] = {}
+      request.header.each do |key, value|
+        match = /^x-amz-meta-(.*)$/.match(key)
+        if match
+          metadata[:custom_metadata][match[1]] = value.join(', ')
+        end
+      end
       return metadata
     end
   end
