@@ -96,6 +96,9 @@ module FakeS3
         response.header['ETag'] = "\"#{real_obj.md5}\""
         response['Accept-Ranges'] = "bytes"
         response['Last-Ranges'] = "bytes"
+        real_obj.custom_metadata.each do |header, value|
+          response.header['x-amz-meta-' + header] = value
+        end
 
         content_length = stat.size
 
@@ -167,10 +170,10 @@ module FakeS3
       filename = 'default'
       filename = $1 if request.body =~ /filename="(.*)"/
       key=key.gsub('${filename}', filename)
-      
+
       bucket_obj = @store.get_bucket(s_req.bucket) || @store.create_bucket(s_req.bucket)
       real_obj=@store.store_object(bucket_obj, key, s_req.webrick_request)
-      
+
       response['Etag'] = "\"#{real_obj.md5}\""
       response.body = ""
       if success_action_redirect
@@ -208,11 +211,11 @@ module FakeS3
       response.status = 204
       response.body = ""
     end
-    
+
     def do_OPTIONS(request, response)
       super
       response["Access-Control-Allow-Origin"]="*"
-    end  
+    end
 
     private
 
@@ -318,7 +321,7 @@ module FakeS3
     def normalize_post(webrick_req,s_req)
       path = webrick_req.path
       path_len = path.size
-      
+
       s_req.path = webrick_req.query['key']
 
       s_req.webrick_request = webrick_req
